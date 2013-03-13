@@ -17,6 +17,7 @@ There are no external dependencies, Lua 5.1 or LuaJIT should work.
 * number
 * array
 * document
+* binary (generic)
 * UTC datetime
 
 ## Limitations
