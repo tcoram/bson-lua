@@ -22,7 +22,6 @@ There are no external dependencies, Lua 5.1 or LuaJIT should work.
 
 ## Limitations
 
-* Only 1 binary subtype (generic).
 * No support for floating point (double) until I figure out how to encode/decode it in pure Lua.
 * int64 is limited by Lua's double type.
 * No javascript-ish types (code, object_id, etc)
