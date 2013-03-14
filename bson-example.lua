@@ -1,10 +1,14 @@
 bson=require'bson'
+epoch=os.time({year=1970, month=1, day=1, hour=0})
 bsondoc1=bson.encode{username="maroc", 
 		     info={first="todd",
 			     last="coram",
 			     age=46,
+			     signature1=bson.binary("\000\001\002\003",bson.B_GENERIC),
+			     signature2=bson.binary("\000\001\002\003"),
 			     saved=true,
-			     ts=bson.utc_datetime(),
+			     now=bson.utc_datetime(),
+			     past=bson.utc_datetime(epoch),
 			     colors={"Red","Green","Blue"}
 		     }}
 decoded=bson.decode(bsondoc1)

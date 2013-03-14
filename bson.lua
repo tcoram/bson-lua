@@ -53,16 +53,25 @@ function bson.to_int32(n,v) return "\016"..n.."\000"..toLSB32(v) end
 function bson.to_int64(n,v) return "\018"..n.."\000"..toLSB64(v) end
 function bson.to_x(n,v) return v(n) end
 
-function bson.utc_datetime()
+function bson.utc_datetime(t)
+   local t = t or os.time()
    f = function (n)
-      return "\009"..n.."\000"..toLSB64(os.time())
+      return "\009"..n.."\000"..toLSB64(t)
    end
    return f
 end
 
-function bson.binary(v)
+-- Binary subtypes
+bson.B_GENERIC  = "\000"
+bson.B_FUNCTION = "\001"
+bson.B_UUID     = "\004"
+bson.B_MD5      = "\005"
+bson.B_USER_DEFINED = "\128"
+
+function bson.binary(v, subtype)
+   local subtype = subtype or bson.B_GENERIC
    f = function (n) 
-      return "\005"..n.."\000"..toLSB32(#v).."\000"..v
+      return "\005"..n.."\000"..toLSB32(#v)..subtype..v
    end
    return f
 end
