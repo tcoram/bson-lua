@@ -54,7 +54,7 @@ function bson.to_int64(n,v) return "\018"..n.."\000"..toLSB64(v) end
 function bson.to_x(n,v) return v(n) end
 
 function bson.utc_datetime(t)
-   local t = t or os.time()
+   local t = t or (os.time()*1000)
    f = function (n)
       return "\009"..n.."\000"..toLSB64(t)
    end

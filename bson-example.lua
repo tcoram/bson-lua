@@ -8,7 +8,7 @@ bsondoc1=bson.encode{username="maroc",
 			     signature2=bson.binary("\000\001\002\003"),
 			     saved=true,
 			     now=bson.utc_datetime(),
-			     past=bson.utc_datetime(epoch),
+			     past=bson.utc_datetime(epoch * 1000),
 			     colors={"Red","Green","Blue"}
 		     }}
 decoded=bson.decode(bsondoc1)

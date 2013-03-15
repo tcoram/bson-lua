@@ -22,6 +22,7 @@ There are no external dependencies, Lua 5.1 or LuaJIT should work.
 
 ## Limitations
 
+* Pure Lua has no way of retrieving millisecond system time, so right now I hack "seconds * 1000" for BSON datetime.
 * No support for floating point (double) until I figure out how to encode/decode it in pure Lua.
 * int64 is limited by Lua's double type.
 * No javascript-ish types (code, object_id, etc)
