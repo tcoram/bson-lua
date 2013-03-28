@@ -208,4 +208,13 @@ function bson.decode(doc)
    return a,d
 end
 
+function bson.decode_next_io(fd)
+   local slen = fd:read(4)
+   if not slen then return nil end
+   local len = fromLSB32(slen) - 4
+   local doc = fd:read(len)
+   return bson.decode(slen..doc)
+end
+
+
 return bson
