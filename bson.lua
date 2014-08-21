@@ -6,15 +6,48 @@
 -- See LICENSE for details.
 --
 
+function ppp(t, d, e)
+  if e == nil then
+    e = ''
+  end
+  
+  e = e .. '  '
+  
+  print('tab', t)
+  if type(d) == 'string' then
+    print('index', 'value', 'char code')
+    for i=1,#d do
+      print(i, d:sub(i,i), string.byte(d:sub(i,i)))
+    end
+  elseif type(d) == 'table' then
+    print('index', 'value', 'char code')
+    for i,j in pairs(d) do
+      if type(j) == 'table' then
+        ppp(t .. ' - ' .. i, j, e)
+      else
+        if type(j) == 'boolean' then
+          code = 'bool'
+        else
+          code = string.byte(j)
+        end
+        print(i, j, code)
+      end
+    end
+  else
+    print(d)
+  end
+  if #e == 2 then
+    print('')
+  end
+end
+
 local bson = {}
 
 -- Helper functions
 
 local function toLSB(bytes,value)
-  local res = ''
-  local size = bytes
   local str = ""
-  for j=1,size do
+  for j=1,bytes do
      str = str .. string.char(value % 256)
      value = math.floor(value / 256)
   end
@@ -35,6 +68,74 @@ local function fromLSB64(s)
       (s:byte(7)*2.8147497671066e+14) + (s:byte(8)*7.2057594037928e+16)
 end
 
+local function to_double(value)
+  local buffer = ''
+  local float64 = {}
+  local bias = 1023
+  local max_bias = 2047
+  local sign = nil
+  local exponent_length = 11
+  local mantissa = 0
+  local mantissa_length = 52
+
+  -- Sign 1 if value is negative and 0 otherwise
+  if value < 0 then
+    sign = 1
+  else
+    sign = 0
+  end
+  
+  -- Avoid log of negative numbers
+  value = math.abs(value)
+  
+  -- 2 to the power of what gives value
+  local exponent = math.floor(math.log(value) / math.log(2))
+  local flag = math.pow( 2, -exponent )
+  
+  if value * flag < 1 then
+    exponent = exponent - 1
+    flag = flag * 2
+  end
+  
+  if value * flag >= 2 then
+    exponent = exponent + 1
+    flag = flag / 2;
+  end
+
+  if exponent + bias >= max_bias then -- Very big
+    exponent = max_bias
+  elseif exponent + bias >= 1 then -- Most of the time will fall here
+    mantissa = (value * flag - 1) * math.pow(2, mantissa_length)
+    exponent = exponent + bias
+  else -- Very tiny
+    mantissa = value * math.pow(2, bias - 1) * math.pow(2, mantissa_length);
+    exponent = 0
+  end
+
+  while mantissa_length >= 8  do
+    table.insert(float64, math.floor(mantissa % 256))
+    mantissa = mantissa / 256
+    mantissa_length = mantissa_length - 8
+  end
+  
+  exponent = math.floor(exponent * math.pow(2, mantissa_length) + mantissa);
+  exponent_length = exponent_length + mantissa_length;
+  
+  while exponent_length > 0  do
+    table.insert(float64, math.floor(exponent % 256))
+    exponent = exponent / 256
+    exponent_length = exponent_length - 8
+  end
+  
+  float64[8] = float64[8] + (sign * 128);
+
+  for i, value in pairs(float64) do
+    buffer = buffer .. string.char(value)
+  end
+  
+  return buffer
+end
+
 
 -- BSON generators
 --
@@ -51,6 +152,7 @@ end
 function bson.to_str(n,v) return "\002"..n.."\000"..toLSB32(#v+1)..v.."\000" end
 function bson.to_int32(n,v) return "\016"..n.."\000"..toLSB32(v) end
 function bson.to_int64(n,v) return "\018"..n.."\000"..toLSB64(v) end
+function bson.to_double(n,v) return "\001"..n.."\000"..to_double(v) end
 function bson.to_x(n,v) return v(n) end
 
 function bson.utc_datetime(t)
@@ -77,13 +179,22 @@ function bson.binary(v, subtype)
 end
 
 function bson.to_num(n,v)
-   if math.floor(v) ~= v then
-      return bson.to_double(n,v)
-   elseif v > 2147483647 or v < -2147483648 then
-      return bson.to_int64(n,v)
-   else
-      return bson.to_int32(n,v)
-   end
+  if v * 2 == v then
+    if v == math.huge then
+      return "\001"..n.."\000\000\000\000\000\000\000\240\127"
+    elseif v == -math.huge then
+      return "\001"..n.."\000\000\000\000\000\000\000\240\255"
+    else
+      return "\001"..n.."\000\001\000\000\000\000\000\240\127"
+    end
+  end
+  if math.floor(v) ~= v then
+    return bson.to_double(n,v)
+  elseif v > 2147483647 or v < -2147483648 then
+    return bson.to_int64(n,v)
+  else
+    return bson.to_int32(n,v)
+  end
 end
 
 function bson.to_doc(n,doc)
@@ -152,6 +263,55 @@ function bson.from_int64(s)
    return fromLSB64(s:sub(1,8)), s:sub(9)
 end
 
+function bson.from_double(buf)
+  local buffer = {}
+  local bias = 1023
+  local last = 0
+  local sign = 1
+  
+  -- Create a reverse version of the buffer
+  for i=1, 8 do
+    last = 8 - (i - 1)
+    buffer[i] = string.byte(buf:sub(last, last))
+  end
+  
+  -- If the first bit is 1 turn sign to -1
+  if math.floor(buffer[1] / math.pow(2, 7)) > 0 then
+    sign = -1
+  end
+  
+  -- Take the last 7 bits
+  local exponent = math.floor(buffer[1] % 128)
+  -- Left shift 8 bits and sum with the seconds octect
+  exponent = exponent * 256 + buffer[2]
+  
+  -- Take the last 4 bits
+  local mantissa = math.floor(exponent % 16)
+  
+  -- Right shift 4 bits
+  exponent = math.floor(exponent / math.pow(2, 4))
+  
+  -- Read the buffer as int32 value
+  for i=3, 8 do
+    mantissa = mantissa * 256 + buffer[i]
+  end
+
+  if exponent == 0 then -- Very tiny
+    exponent = 1 - bias
+  elseif exponent == 2047 then -- Very big
+    if mantissa > 0 then
+      return 0 / 0 -- Not a number
+    else
+      return sign * (1 / 0) -- Positive or negative infinite
+    end
+  else -- Most of the time will fall here
+    mantissa = mantissa + 4503599627370496
+    exponent = exponent - bias
+  end
+  
+  return sign * mantissa * math.pow(2, exponent - 52), buf:sub(9)
+end
+
 function bson.from_utc_date_time(s)
    return fromLSB64(s:sub(1,8)), s:sub(9)
 end
@@ -183,6 +343,10 @@ function bson.decode_doc(doc,doctype)
       local ename = doc:match("(%Z+)\000",2)
       doc = doc:sub(#ename+3)
       val,doc = bson_to_lua_tbl[etype](doc,etype)
+      
+      -- ppp('val', val)
+      -- ppp('doc', doc)
+      
       if doctype == 4 then
 	 table.insert(luatab,val)
       else
@@ -193,6 +357,7 @@ function bson.decode_doc(doc,doctype)
 end
 
 bson_to_lua_tbl= {
+   [1] = bson.from_double,
    [2] = bson.from_str,
    [16] = bson.from_int32,
    [18] = bson.from_int64,
@@ -215,6 +380,5 @@ function bson.decode_next_io(fd)
    local doc = fd:read(len)
    return bson.decode(slen..doc)
 end
-
 
 return bson
