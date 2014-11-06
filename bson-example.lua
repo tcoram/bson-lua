@@ -15,10 +15,15 @@ bsondoc2=bson.encode{username="maroc",
 			     past=bson.utc_datetime(epoch * 1000),
 			     colors={"Red","Green","Blue"}
 		     }}
+bsondoc3=bson.encode{precise_age=22.9,
+           	     temperature=-11.3,
+           	     height=7.6
+         	    }
 
 f=io.open("/tmp/test.bson", "wb")
 f:write(bsondoc1)
 f:write(bsondoc2)
+f:write(bsondoc3)
 f:close()
 
 function print_table(t)
@@ -35,6 +40,7 @@ end
 
 -- print_table(bson.decode(bsondoc1))
 -- print_table(bson.decode(bsondoc2))
+-- print_table(bson.decode(bsondoc3))
 
 f=io.open("/tmp/test.bson", "rb")
 while true do
