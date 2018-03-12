@@ -179,15 +179,14 @@ function bson.binary(v, subtype)
 end
 
 function bson.to_num(n,v)
-  if v * 2 == v then
-    if v == math.huge then
-      return "\001"..n.."\000\000\000\000\000\000\000\240\127"
-    elseif v == -math.huge then
-      return "\001"..n.."\000\000\000\000\000\000\000\240\255"
-    else
-      return "\001"..n.."\000\001\000\000\000\000\000\240\127"
-    end
+  if v == math.huge then
+    return "\001"..n.."\000\000\000\000\000\000\000\240\127"
+  elseif v == -math.huge then
+    return "\001"..n.."\000\000\000\000\000\000\000\240\255"
+  elseif v ~= v then -- NaN
+    return "\001"..n.."\000\001\000\000\000\000\000\240\127"
   end
+
   if math.floor(v) ~= v then
     return bson.to_double(n,v)
   elseif v > 2147483647 or v < -2147483648 then
@@ -319,7 +318,7 @@ end
 function bson.from_binary(s)
    local len = fromLSB32(s:sub(1,4))
    s = s:sub(6)
-   local str = s:sub(1,len-1)
+   local str = s:sub(1,len)
    return str, s:sub(len+1)
 end
 
