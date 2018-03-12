@@ -318,7 +318,7 @@ end
 function bson.from_binary(s)
    local len = fromLSB32(s:sub(1,4))
    s = s:sub(6)
-   local str = s:sub(1,len-1)
+   local str = s:sub(1,len)
    return str, s:sub(len+1)
 end
 
