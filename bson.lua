@@ -179,15 +179,14 @@ function bson.binary(v, subtype)
 end
 
 function bson.to_num(n,v)
-  if v * 2 == v then
-    if v == math.huge then
-      return "\001"..n.."\000\000\000\000\000\000\000\240\127"
-    elseif v == -math.huge then
-      return "\001"..n.."\000\000\000\000\000\000\000\240\255"
-    else
-      return "\001"..n.."\000\001\000\000\000\000\000\240\127"
-    end
+  if v == math.huge then
+    return "\001"..n.."\000\000\000\000\000\000\000\240\127"
+  elseif v == -math.huge then
+    return "\001"..n.."\000\000\000\000\000\000\000\240\255"
+  elseif v ~= v then -- NaN
+    return "\001"..n.."\000\001\000\000\000\000\000\240\127"
   end
+
   if math.floor(v) ~= v then
     return bson.to_double(n,v)
   elseif v > 2147483647 or v < -2147483648 then
