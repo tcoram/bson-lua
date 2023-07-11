@@ -5,40 +5,9 @@
 -- Copyright (c) 2013, Todd Coram. All rights reserved.
 -- See LICENSE for details.
 --
-function ppp(t, d, e)
-  if e == nil then
-      e = ''
-  end
+local bson_to_lua_tbl
+local lua_to_bson_tbl
 
-  e = e .. '  '
-
-  print('tab', t)
-  if type(d) == 'string' then
-      print('index', 'value', 'char code')
-      for i = 1, #d do
-          print(i, d:sub(i, i), string.byte(d:sub(i, i)))
-      end
-  elseif type(d) == 'table' then
-      print('index', 'value', 'char code')
-      for i, j in pairs(d) do
-          if type(j) == 'table' then
-              ppp(t .. ' - ' .. i, j, e)
-          else
-              if type(j) == 'boolean' then
-                  code = 'bool'
-              else
-                  code = string.byte(j)
-              end
-              print(i, j, code)
-          end
-      end
-  else
-      print(d)
-  end
-  if #e == 2 then
-      print('')
-  end
-end
 
 local bson = {}
 
@@ -385,7 +354,7 @@ bson_to_lua_tbl = {
 }
 
 function bson.decode(doc)
-  a, d = bson.decode_doc(doc, nil)
+  local a, d = bson.decode_doc(doc, nil)
   return a, d
 end
 
@@ -396,7 +365,6 @@ function bson.decode_next_io(fd)
   end
   local len = fromLSB32(slen) - 4
   local doc = fd:read(len)
-  --    print('weiyg>>>', len, doc)
   return bson.decode(slen .. doc)
 end
 
