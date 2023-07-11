@@ -19,6 +19,7 @@ There are no external dependencies, Lua 5.1 or LuaJIT should work.
 * document
 * binary (generic)
 * UTC datetime
+* ObjectId
 
 ## Limitations
 
@@ -34,7 +35,7 @@ Here is an example to get you started:
 ```
 bson=require'bson'
 epoch=os.time({year=1970, month=1, day=1, hour=0})
-bsondoc1=bson.encode{username="maroc", 
+bsondoc1=bson.encode{username="maroc",
 		     info={first="todd",
 			     last="coram",
 			     age=46,
