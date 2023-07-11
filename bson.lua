@@ -15,7 +15,7 @@ local bson = {}
 
 local function toLSB(bytes, value)
   local str = ""
-  for j = 1, bytes do
+  for _ = 1, bytes do
       str = str .. string.char(value % 256)
       value = math.floor(value / 256)
   end
@@ -43,7 +43,7 @@ local function to_double(value)
   local float64 = {}
   local bias = 1023
   local max_bias = 2047
-  local sign = nil
+  local sign
   local exponent_length = 11
   local mantissa = 0
   local mantissa_length = 52
@@ -99,8 +99,8 @@ local function to_double(value)
 
   float64[8] = float64[8] + (sign * 128);
 
-  for i, value in pairs(float64) do
-      buffer = buffer .. string.char(value)
+  for _, value2 in pairs(float64) do
+      buffer = buffer .. string.char(value2)
   end
 
   return buffer
@@ -135,8 +135,8 @@ function bson.to_x(n, v)
 end
 
 function bson.utc_datetime(t)
-  local t = t or (os.time() * 1000)
-  f = function(n)
+  t = t or (os.time() * 1000)
+  local f = function(n)
       return "\009" .. n .. "\000" .. toLSB64(t)
   end
   return f
@@ -150,8 +150,8 @@ bson.B_MD5 = "\005"
 bson.B_USER_DEFINED = "\128"
 
 function bson.binary(v, subtype)
-  local subtype = subtype or bson.B_GENERIC
-  f = function(n)
+  subtype = subtype or bson.B_GENERIC
+  local f = function(n)
       return "\005" .. n .. "\000" .. toLSB32(#v) .. subtype .. v
   end
   return f
@@ -252,7 +252,7 @@ end
 function bson.from_double(buf)
   local buffer = {}
   local bias = 1023
-  local last = 0
+  local last
   local sign = 1
 
   -- Create a reverse version of the buffer
@@ -318,7 +318,7 @@ end
 
 function bson.decode_doc(doc, doctype)
   local luatab = {}
-  local len = fromLSB32(doc:sub(1, 4))
+  -- local len = fromLSB32(doc:sub(1, 4))
   doc = doc:sub(5)
   repeat
       local val
