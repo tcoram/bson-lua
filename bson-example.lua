@@ -20,7 +20,7 @@ bsondoc3=bson.encode{precise_age=22.9,
            	     height=7.6
          	    }
 
-f=io.open("./tmp/test.bson", "wb")
+f=io.open("/tmp/test.bson", "wb")
 f:write(bsondoc1)
 f:write(bsondoc2)
 f:write(bsondoc3)
@@ -42,7 +42,7 @@ end
 -- print_table(bson.decode(bsondoc2))
 -- print_table(bson.decode(bsondoc3))
 
-f=io.open("./tmp/test.bson", "rb")
+f=io.open("/tmp/test.bson", "rb")
 while true do
    local btab = bson.decode_next_io(f)
    if not btab then break end
