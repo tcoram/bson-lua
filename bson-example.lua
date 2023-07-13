@@ -1,4 +1,4 @@
-bson=require'bson'
+bson = require 'bson'
 epoch=os.time({year=1970, month=1, day=1, hour=0})
 bsondoc1=bson.encode{year=2013,
 		     month="April",
